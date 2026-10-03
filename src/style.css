@@ -53,3 +53,13 @@ tbody td{font-size:12px}
 .modal-head p{font-size:12px}
 .login-card>p{font-size:13px}
 .login-error{font-size:12px}
+
+/* Searchable type-ahead fields used in Stock IN and Stock OUT. */
+.autocomplete-wrap{position:relative;width:100%;min-width:0}
+.autocomplete-wrap input{width:100%;padding-right:34px}
+.autocomplete-wrap input:disabled{background:#f5f7f4;color:#98a49c;cursor:not-allowed}
+.autocomplete-options{position:absolute;z-index:90;top:calc(100% + 4px);left:0;right:0;display:none;max-height:220px;overflow:auto;padding:4px;border:1px solid #dfe8df;border-radius:10px;background:#fff;box-shadow:0 12px 28px rgba(22,48,36,.16)}
+.autocomplete-options.open{display:block}
+.autocomplete-option{display:block;width:100%;padding:9px 10px;border:0;border-radius:7px;background:#fff;color:#35483c;text-align:left;font-size:13px;line-height:1.35}
+.autocomplete-option:hover,.autocomplete-option.active{background:#eff6e9;color:#244d38}
+.autocomplete-empty{padding:10px;color:#8b9890;font-size:12px}
