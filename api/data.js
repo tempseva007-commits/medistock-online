@@ -32,7 +32,7 @@ async function getPatients() {
 async function getStockEntries() {
   return sql`
     SELECT se.id, se.product_id AS "productId", p.content_name AS "contentName",
-           p.brand_name AS "brandName", p.packing, p.uses,
+           p.brand_name AS "brandName", p.packing, p.uses, p.demand,
            p.usage_category AS category, se.batch_no AS "batchNo",
            se.qty_in AS "qtyIn", se.expiry_date AS "expiryDate",
            se.entry_date AS "entryDate", se.created_at AS "createdAt",
@@ -50,7 +50,7 @@ async function getStockOuts() {
   return sql`
     SELECT so.id, so.stock_entry_id AS "lotId", se.product_id AS "productId",
            p.content_name AS "contentName", p.brand_name AS "brandName",
-           p.packing, p.uses, p.usage_category AS category,
+           p.packing, p.uses, p.demand, p.usage_category AS category,
            se.expiry_date AS "expiryDate", so.patient_id AS "patientId",
            pt.name AS "patientName", pt.patient_code AS "patientCode",
            so.qty_out AS qty, so.issue_date AS date, so.created_at AS "createdAt"
@@ -120,8 +120,12 @@ export async function GET(request) {
     const page = new URL(request.url).searchParams.get('page') || '';
     if (page === 'export') {
       await requireAdmin(request);
-      const [products, patients, stockEntries, stockOuts] = await Promise.all([getProducts(), getPatients(), getStockEntries(), getStockOuts()]);
-      return json({ products, patients, stockEntries, stockOuts, expiryDays: await getExpiryDays() });
+      const section = new URL(request.url).searchParams.get('section') || '';
+      if (section === 'products') return json({ products: await getProducts() });
+      if (section === 'stockIn') return json({ stockEntries: await getStockEntries() });
+      if (section === 'stockOut') return json({ stockOuts: await getStockOuts() });
+      if (section === 'patients') return json({ patients: await getPatients() });
+      throw new HttpError(400, 'Export માટે એક જ tab પસંદ કરો.');
     }
     if (page === 'dashboard') {
       await requirePage(request, page);
