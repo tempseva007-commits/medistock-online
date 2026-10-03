@@ -23,14 +23,8 @@ async function saveProduct(p) {
        AND lower(packing) = lower(${packing})
      LIMIT 1
   `;
-  if (found[0]) {
-    await sql`
-      UPDATE public.products
-         SET uses = ${uses}, demand = ${demand}, usage_category = ${category}
-       WHERE id = ${found[0].id}
-    `;
-    return found[0].id;
-  }
+  // Import is append-only: reuse a matching product without changing its saved fields.
+  if (found[0]) return found[0].id;
   const inserted = await sql`
     INSERT INTO public.products (content_name, brand_name, packing, uses, demand, usage_category)
     VALUES (${contentName}, ${brandName}, ${packing}, ${uses}, ${demand}, ${category})
@@ -74,10 +68,17 @@ export async function POST(request) {
     assertSameOrigin(request);
     await requireAdmin(request);
     const body = await readJson(request);
+    const section = text(body.section, 40);
     const products = Array.isArray(body.products) ? body.products : [];
     const patients = Array.isArray(body.patients) ? body.patients : [];
     const entries = Array.isArray(body.stockEntries) ? body.stockEntries : [];
     const outs = Array.isArray(body.stockOuts) ? body.stockOuts : [];
+    if (!['products', 'stockIn', 'stockOut', 'patients'].includes(section)) throw new HttpError(400, 'Import માટે active tab આપવો જરૂરી છે.');
+    const hasOutOfScope = section === 'products' ? patients.length || entries.length || outs.length
+      : section === 'patients' ? products.length || entries.length || outs.length
+      : section === 'stockIn' ? patients.length || outs.length
+      : patients.length || entries.length;
+    if (hasOutOfScope) throw new HttpError(400, 'ફક્ત પસંદ કરેલા active tabમાં જ import કરી શકાય.');
     if (!products.length && !patients.length && !entries.length && !outs.length) throw new HttpError(400, 'Workbookમાં import કરવા records નથી.');
 
     const productIds = new Map();
@@ -86,8 +87,13 @@ export async function POST(request) {
     for (const p of products) {
       const key = [text(p.contentName), text(p.brandName), text(p.packing)].map(x => x.toLowerCase()).join('|');
       const before = await sql`SELECT id FROM public.products WHERE lower(content_name)=lower(${text(p.contentName)}) AND lower(brand_name)=lower(${text(p.brandName)}) AND lower(packing)=lower(${text(p.packing)}) LIMIT 1`;
+      if (before[0]) {
+        productIds.set(key, before[0].id);
+        if (section === 'products') duplicatesSkipped++;
+        continue;
+      }
       const id = await saveProduct(p);
-      if (!before[0]) addedProducts++;
+      addedProducts++;
       productIds.set(key, id);
     }
     for (const p of patients) {
