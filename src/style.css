@@ -63,3 +63,17 @@ tbody td{font-size:12px}
 .autocomplete-option{display:block;width:100%;padding:9px 10px;border:0;border-radius:7px;background:#fff;color:#35483c;text-align:left;font-size:13px;line-height:1.35}
 .autocomplete-option:hover,.autocomplete-option.active{background:#eff6e9;color:#244d38}
 .autocomplete-empty{padding:10px;color:#8b9890;font-size:12px}
+
+/* Keep long Stock OUT forms scrollable between the fixed modal header/footer. */
+.modal #entityForm{display:flex;flex:1 1 auto;flex-direction:column;min-height:0;overflow:hidden}
+.modal .modal-body{flex:1 1 auto;min-height:0;overflow-y:auto;overscroll-behavior:contain}
+.modal .modal-foot{flex:0 0 auto}
+.stock-search-summary{display:flex;align-items:center;gap:12px;padding:14px 16px;border:1px solid #dfe9df;border-radius:12px;background:#fff;box-shadow:0 4px 16px rgba(25,55,42,.025)}
+.stock-search-summary-icon{width:34px;height:34px;display:grid;place-items:center;border-radius:10px;background:#eef5e9;color:#4e7755}
+.stock-search-summary-icon svg{width:17px;height:17px}
+.stock-search-summary b{display:block;color:#35493c;font-size:13px}
+.stock-search-summary span{display:block;margin-top:4px;color:#78877e;font-size:12px}
+.product-stock-search{width:min(100%,460px);min-height:44px;display:flex;align-items:center;gap:9px;padding:0 12px;border:1px solid #dfe8df;border-radius:10px;background:#fff;color:#718178}
+.product-stock-search svg{width:17px;height:17px;flex:none}
+.product-stock-search input{width:100%;min-width:0;border:0;outline:0;background:transparent;color:#33473b;font-size:14px}
+.product-stock-search input::placeholder{color:#99a59d}
