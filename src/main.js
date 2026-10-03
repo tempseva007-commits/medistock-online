@@ -119,7 +119,7 @@ function renderShell() {
   const nav=PAGE_KEYS.filter(canPage).map(key=>`<button class="nav-link ${state.page===key?'active':''}" data-page="${key}">${icon(PAGE_INFO[key].icon)}<span class="nav-text">${esc(PAGE_INFO[key].title)}</span></button>`).join('');
   const usersNav=user?.role==='admin'?`<button class="nav-link ${state.page==='users'?'active':''}" data-page="users">${icon('shield')}<span class="nav-text">Users & Rights</span></button>`:'';
   const sheetActions=user?.role==='admin'&&DATA_PAGES.includes(state.page)?`<button class="btn" data-action="template" title="${esc(SHEET_BY_PAGE[state.page])} માટે template">${icon('file')}<span>Template</span></button><button class="btn" data-action="import" title="માત્ર આ tab import થશે">${icon('up')}<span>Import</span></button><button class="btn primary" data-action="export" title="માત્ર આ tab export થશે">${icon('download')}<span>Export Excel</span></button>`:'';
-  document.getElementById('app').innerHTML=`<div class="app-shell"><aside class="sidebar" id="sidebar"><div class="brand"><span class="brand-mark">${icon('pill')}</span><div class="brand-copy"><div class="brand-name">MediStock</div><div class="brand-sub">Online inventory</div></div></div><div class="nav-caption">WORKSPACE</div><nav class="nav-list">${nav}${usersNav}</nav><div class="sidebar-spacer"></div><div class="sidebar-user"><span class="user-avatar">${esc((user?.name||'M').slice(0,1))}</span><div class="sidebar-user-copy"><b>${esc(user?.name)}</b><span>${user?.role==='admin'?'ADMIN':'MEMBER'} · ${esc(user?.email)}</span></div><button class="logout-btn" data-action="logout" title="Sign out">${icon('logout')}</button></div></aside><input id="excelInput" type="file" accept=".xlsx,.csv,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,text/csv" hidden><div class="main"><header class="topbar"><button class="btn mobile-menu" data-action="mobile-menu">☰</button><div class="crumb">MediStock&nbsp; › &nbsp;<b id="crumb"></b></div><div class="top-actions"><label class="search-box">${icon('search')}<input id="searchInput" type="search" placeholder="આ પેજમાં શોધો…" value="${esc(state.query)}"></label>${sheetActions}</div></header><main class="content"><div class="page-head"><div><div class="eyebrow" id="eyebrow"></div><h1 id="title"></h1><p class="page-desc" id="desc"></p></div><div class="page-actions" id="pageActions"></div></div><div class="page-body" id="pageBody"><div class="loading-screen">Data લોડ થઈ રહ્યો છે…</div></div></main></div></div>`;
+  document.getElementById('app').innerHTML=`<div class="app-shell"><aside class="sidebar" id="sidebar"><div class="brand"><span class="brand-mark">${icon('pill')}</span><div class="brand-copy"><div class="brand-name">MediStock</div><div class="brand-sub">Online inventory</div></div></div><div class="nav-caption">WORKSPACE</div><nav class="nav-list">${nav}${usersNav}</nav><div class="sidebar-spacer"></div><div class="sidebar-user"><span class="user-avatar">${esc((user?.name||'M').slice(0,1))}</span><div class="sidebar-user-copy"><b>${esc(user?.name)}</b><span>${user?.role==='admin'?'ADMIN':'MEMBER'} · ${esc(user?.email)}</span></div><button class="logout-btn" data-action="logout" title="Sign out">${icon('logout')}</button></div></aside><input id="excelInput" type="file" accept=".xlsx,.csv,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,text/csv" hidden><div class="main"><header class="topbar"><button class="btn mobile-menu" data-action="mobile-menu">☰</button><div class="crumb">MediStock&nbsp; › &nbsp;<b id="crumb"></b></div><div class="top-actions"><label class="search-box">${icon('search')}<input id="searchInput" type="search" placeholder="${state.page==='products'?'Content Name અથવા Brand શોધો…':'આ પેજમાં શોધો…'}" value="${esc(state.query)}"></label>${sheetActions}</div></header><main class="content"><div class="page-head"><div><div class="eyebrow" id="eyebrow"></div><h1 id="title"></h1><p class="page-desc" id="desc"></p></div><div class="page-actions" id="pageActions"></div></div><div class="page-body" id="pageBody"><div class="loading-screen">Data લોડ થઈ રહ્યો છે…</div></div></main></div></div>`;
   document.getElementById('searchInput')?.addEventListener('input',e=>{state.query=e.target.value;renderPage();});
   renderPageHeader();
 }
@@ -185,8 +185,12 @@ function renderDashboard(d={}) {
   return `<section class="hero"><div class="hero-copy"><div class="hero-kicker">MEDICAL STOCK OVERVIEW</div><h2>નમસ્તે, ${esc(state.user?.name||'')}!</h2><p>તમારી stock સ્થિતિ, expiry dates અને તાજેતરની activity જુઓ. દરેક entry online databaseમાં સાચવાય છે.</p><div class="hero-actions">${canPage('stockIn')?`<button class="btn primary" data-action="add-stock-in">${icon('up')} Stock ઉમેરો</button>`:''}${canPage('stockOut')?`<button class="btn" data-action="add-stock-out">${icon('down')} Patientને issue કરો</button>`:''}</div></div><div class="hero-mark">＋</div></section><section class="stats"><div class="stat"><div class="stat-label">કુલ products</div><div class="stat-value">${qty(s.productCount)}</div><div class="stat-note">Product Masterમાં</div></div><div class="stat"><div class="stat-label">Usable units</div><div class="stat-value">${qty(s.units)}</div><div class="stat-note">Expired batch ગણતરીમાં નથી</div></div><div class="stat"><div class="stat-label">Low stock</div><div class="stat-value">${qty(s.lowCount)}</div><div class="stat-note">Content Name પ્રમાણે</div></div><div class="stat"><div class="stat-label">Expiry alert</div><div class="stat-value">${qty(s.expiringCount)}</div><div class="stat-note">ચાલુ + આવતો મહિનો</div></div></section><section class="dash-grid"><div class="panel"><div class="panel-head"><div><h3>Low-stock alert</h3><p>Content Nameના variantsનો usable stock સામે એક Demand</p></div>${canPage('alerts')?`<button class="btn small ghost" data-page="alerts">બધા જુઓ →</button>`:''}</div><div class="panel-body">${low.map(p=>`<div class="mini-row"><span class="mini-ico">${icon('pill')}</span><div class="mini-copy"><b>${esc(p.contentName)}</b><span>${qty(p.variantCount)} variants · એક Demand ${qty(p.demand)}</span></div><span class="mini-value">${qty(p.currentStock)} left</span></div>`).join('')||emptyMessage('Low stock alert નથી','હાલમાં કોઈ Content Nameનું total stock Demandથી નીચે નથી.')}</div></div><div class="panel"><div class="panel-head"><div><h3>Expiry નજીક</h3><p>ચાલુ calendar month + આવતો મહિનો</p></div>${canPage('alerts')?`<button class="btn small ghost" data-page="alerts">બધા જુઓ →</button>`:''}</div><div class="panel-body">${exp.map(x=>`<div class="mini-row"><span class="mini-ico amber">${icon('calendar')}</span><div class="mini-copy"><b>${esc(x.contentName)} · ${esc(x.brandName||'')}</b><span>${monthYearText(x.expiryDate)} · ${qty(x.currentStock)} units</span></div><span class="mini-value">${Number(x.daysLeft)<0?'Expired':`${qty(x.daysLeft)}d`}</span></div>`).join('')||emptyMessage('Expiry alert નથી','Alert windowમાં કોઈ batch નથી.')}</div></div></section><section class="panel"><div class="panel-head"><div><h3>Recent activity</h3><p>તાજેતરની Stock IN / Stock OUT</p></div></div><div class="activity">${recent.map(x=>`<div class="activity-row"><span class="activity-mark ${x.kind==='out'?'out':''}">${icon(x.kind==='out'?'down':'up')}</span><div class="activity-copy"><b>${esc(x.contentName)} ${x.kind==='out'?'issued':'stock added'}</b><span>${dateText(x.date)} · ${esc(x.brandName||'')}</span></div><span class="activity-qty">${x.kind==='out'?'−':'+'}${qty(x.qty)}</span></div>`).join('')||emptyMessage('હજુ activity નથી','Stock IN અથવા Stock OUT પછી અહીં દેખાશે.')}</div></section>`;
 }
 function renderProducts(d={}) {
-  const rows=(d.products||[]).filter(p=>match([p.contentName,p.brandName,p.packing,p.uses,p.category,p.demand,p.currentStock])).map(p=>`<tr><td><span class="cell-main">${esc(p.contentName)}</span></td><td>${esc(p.brandName||'—')}</td><td>${esc(p.packing||'—')}</td><td><span class="num">${qty(p.currentStock)}</span></td><td>${qty(p.demand)}</td><td>${esc(p.uses||'—')}</td><td>${esc(p.category||'—')}</td><td><div class="row-actions"><button class="icon-btn" data-action="edit-product" data-id="${esc(p.id)}" title="Edit">${icon('edit')}</button>${state.user?.role==='admin'?`<button class="icon-btn delete" data-action="delete-product" data-id="${esc(p.id)}" title="Delete">${icon('trash')}</button>`:''}</div></td></tr>`);
-  return `<div class="notice">${icon('info')}<span><b>Demand</b> low-stock threshold છે. Current Stock non-expired batchesમાંથી ગણાય છે.</span></div>${tableCard('Product Master',rows,['Content Name','Brand Name','Packing','Current Stock','Demand','Uses','usage category','Actions'],'Current stock auto-calculated')}`;
+  const products=d.products||[],filtered=products.filter(p=>match([p.contentName,p.brandName,p.packing,p.uses,p.category,p.demand,p.currentStock]));
+  const rows=filtered.map(p=>`<tr><td><span class="cell-main">${esc(p.contentName)}</span></td><td>${esc(p.brandName||'—')}</td><td>${esc(p.packing||'—')}</td><td><span class="num">${qty(p.currentStock)}</span></td><td>${qty(p.demand)}</td><td>${esc(p.uses||'—')}</td><td>${esc(p.category||'—')}</td><td><div class="row-actions"><button class="icon-btn" data-action="edit-product" data-id="${esc(p.id)}" title="Edit">${icon('edit')}</button>${state.user?.role==='admin'?`<button class="icon-btn delete" data-action="delete-product" data-id="${esc(p.id)}" title="Delete">${icon('trash')}</button>`:''}</div></td></tr>`);
+  const matchingUnits=filtered.reduce((sum,p)=>sum+(Number(p.currentStock)||0),0);
+  const searchControl=`<label class="product-stock-search">${icon('search')}<input id="productStockSearch" type="search" placeholder="Content Name અથવા Brand લખો…" value="${esc(state.query)}" aria-label="Product Name અથવા Brandથી stock શોધો"></label>`;
+  const searchHint=state.query.trim()?`<div class="stock-search-summary"><div class="stock-search-summary-icon">${icon('search')}</div><div><b>“${esc(state.query.trim())}” માટે ${qty(filtered.length)} matching product/variant</b><span>Matching rowsનું કુલ usable stock: ${qty(matchingUnits)} units</span></div></div>`:`<div class="notice">${icon('info')}<span>Content Name અથવા Brand શોધો. દરેક matching Brand/Packingનું Current Stock અને matching rowsનો કુલ usable stock અહીં દેખાશે.</span></div>`;
+  return `${searchControl}${searchHint}<div class="notice">${icon('info')}<span><b>Demand</b> low-stock threshold છે. Current Stock non-expired batchesમાંથી ગણાય છે.</span></div>${tableCard('Product Master',rows,['Content Name','Brand Name','Packing','Current Stock','Demand','Uses','usage category','Actions'],'Search the product name or brand to see stock')}`;
 }
 function renderPatients(d={}) {
   const rows=(d.patients||[]).filter(p=>match([p.name,p.patientId,p.phone,p.age,p.gender,p.notes])).map(p=>`<tr><td><span class="cell-main">${esc(p.name)}</span></td><td>${esc(p.patientId||'—')}</td><td>${esc(p.phone||'—')}</td><td>${esc(p.age??'—')}</td><td>${esc(p.gender||'—')}</td><td>${esc(p.notes||'—')}</td><td><div class="row-actions"><button class="icon-btn" data-action="edit-patient" data-id="${esc(p.id)}">${icon('edit')}</button>${state.user?.role==='admin'?`<button class="icon-btn delete" data-action="delete-patient" data-id="${esc(p.id)}">${icon('trash')}</button>`:''}</div></td></tr>`);
@@ -195,14 +199,14 @@ function renderPatients(d={}) {
 function renderStockIn(d={}) {
   const rows=(d.stockEntries||[]).filter(e=>match([e.contentName,e.brandName,e.packing,e.expiryDate,e.entryDate,e.currentStock,e.qtyIn])).map(e=>{
     const days=daysLeft(e.expiryDate), badge=days!==null&&days<0?'<span class="status danger">Expired</span>':nearExpiryMonth(e.expiryDate)?`<span class="status warn">${monthYearText(e.expiryDate)} · Near</span>`:`<span>${monthYearText(e.expiryDate)}</span>`;
-    return `<tr><td><span class="cell-main">${esc(e.contentName)}</span></td><td>${esc(e.brandName||'—')}</td><td>${esc(e.packing||'—')}</td><td><span class="num">${qty(e.currentStock)}</span></td><td>${qty(e.qtyIn)}</td><td>${badge}</td><td>${esc(e.uses||'—')}</td><td>${esc(e.category||'—')}</td><td>${dateText(e.entryDate)}</td><td>${state.user?.role==='admin'?`<button class="icon-btn delete" data-action="delete-stock-in" data-id="${esc(e.id)}">${icon('trash')}</button>`:'—'}</td></tr>`;
+    return `<tr><td><span class="cell-main">${esc(e.contentName)}</span></td><td>${esc(e.brandName||'—')}</td><td>${esc(e.packing||'—')}</td><td><span class="num">${qty(e.currentStock)}</span></td><td>${qty(e.qtyIn)}</td><td>${badge}</td><td>${esc(e.uses||'—')}</td><td>${esc(e.category||'—')}</td><td>${dateText(e.entryDate)}</td><td>${state.user?.role==='admin'?`<div class="row-actions"><button class="icon-btn" data-action="edit-stock-in" data-id="${esc(e.id)}" title="Edit Stock IN">${icon('edit')}</button><button class="icon-btn delete" data-action="delete-stock-in" data-id="${esc(e.id)}" title="Delete Stock IN">${icon('trash')}</button></div>`:'—'}</td></tr>`;
   });
   return `<div class="notice">${icon('info')}<span>દરેક Stock IN એક expiry batch છે. Batch balanceમાંથી Stock OUT બાદ બાકી રહેલો stock બતાવે છે.</span></div>${tableCard('Stock Entry batches',rows,['Content Name','Brand Name','Packing','Current Stock','Stock IN','Expiry Date','Uses','usage category','Entry Date','Actions'])}`;
 }
 function renderStockOut(d={}) {
   const products=d.products||[], rows=(d.stockOuts||[]).filter(o=>match([o.contentName,o.brandName,o.patientName,o.patientCode,o.expiryDate,o.date,o.qty])).map(o=>{
     const current=(products.find(p=>p.id===o.productId)?.currentStock)||0;
-    return `<tr><td><span class="cell-main">${esc(o.contentName)}</span></td><td>${esc(o.brandName||'—')}</td><td>${esc(o.packing||'—')}</td><td><span class="num">${qty(current)}</span></td><td>${qty(o.qty)}</td><td>${esc(o.patientName)}<div class="cell-sub">${esc(o.patientCode||'')}</div></td><td>${monthYearText(o.expiryDate)}</td><td>${esc(o.uses||'—')}</td><td>${esc(o.category||'—')}</td><td>${dateText(o.date)}</td><td>${state.user?.role==='admin'?`<button class="icon-btn delete" data-action="undo-stock-out" data-id="${esc(o.id)}">${icon('trash')}</button>`:'—'}</td></tr>`;
+    return `<tr><td><span class="cell-main">${esc(o.contentName)}</span></td><td>${esc(o.brandName||'—')}</td><td>${esc(o.packing||'—')}</td><td><span class="num">${qty(current)}</span></td><td>${qty(o.qty)}</td><td>${esc(o.patientName)}</td><td>${monthYearText(o.expiryDate)}</td><td>${esc(o.uses||'—')}</td><td>${esc(o.category||'—')}</td><td>${dateText(o.date)}</td><td>${state.user?.role==='admin'?`<div class="row-actions"><button class="icon-btn" data-action="edit-stock-out" data-id="${esc(o.id)}" title="Edit Stock OUT">${icon('edit')}</button><button class="icon-btn delete" data-action="undo-stock-out" data-id="${esc(o.id)}" title="Undo Stock OUT">${icon('trash')}</button></div>`:'—'}</td></tr>`;
   });
   return `<div class="notice">${icon('info')}<span>માત્ર non-expired batchમાંથી Stock OUT થાય છે. FEFO પ્રમાણે વહેલી expiryવાળો batch પહેલાં સૂચવાય છે.</span></div>${tableCard('Stock Out history',rows,['Content Name','Brand Name','Packing','Current Stock','Stock OUT','Patient','Expiry Date','Uses','usage category','Date','Actions'])}`;
 }
@@ -228,7 +232,17 @@ function modal({title,subtitle,body,type,id='',wide=false,submit='Save',note=''}
   document.getElementById('entityForm')?.querySelector('input,select,textarea')?.focus();
 }
 function openProductForm(product=null) {
-  modal({title:product?'Edit Product':'Add Product',subtitle:'Product Masterની વિગતો ભરો.',type:product?'product.update':'product.create',id:product?.id||'',note:'* જરૂરી field',body:`<div class="form-grid">${field('Content Name','contentName',product?.contentName||'',{required:true,placeholder:'ઉદા. Paracetamol'})}${field('Brand Name','brandName',product?.brandName||'',{placeholder:'ઉદા. Crocin'})}${field('Packing','packing',product?.packing||'',{placeholder:'10 tablets / 100 ml'})}${field('Demand','demand',product?.demand??'',{type:'number',min:0,step:'any',placeholder:'Low-stock limit'})}${field('Uses','uses',product?.uses||'',{placeholder:'Fever, pain relief'})}${field('usage category','category',product?.category||'',{placeholder:'Antibiotic / General'})}</div>`});
+  const known=state.data.products||[];
+  modal({title:product?'Edit Product':'Add Product',subtitle:'જૂની valuesમાંથી suggestion પસંદ કરો અથવા નવું value લખો.',type:product?'product.update':'product.create',id:product?.id||'',note:'Suggestions optional છે; નવી medicine/brand/category/uses પણ લખી શકાય.',body:`<div class="form-grid">${productSuggestionField('Content Name','contentName',product?.contentName||'',{id:'productContentName',required:true,placeholder:'Content Name લખો'})}${productSuggestionField('Brand Name','brandName',product?.brandName||'',{id:'productBrandName',placeholder:'Brand Name લખો'})}${productSuggestionField('Packing','packing',product?.packing||'',{id:'productPacking',placeholder:'Packing લખો'})}${field('Demand','demand',product?.demand??'',{type:'number',min:0,step:'any',placeholder:'Low-stock limit'})}${productSuggestionField('Uses','uses',product?.uses||'',{id:'productUses',placeholder:'Uses લખો'})}${productSuggestionField('usage category','category',product?.category||'',{id:'productCategory',placeholder:'Category લખો'})}</div>`});
+  const contentQuery=()=>document.getElementById('productContentName')?.value.trim().toLowerCase()||'';
+  const brandQuery=()=>document.getElementById('productBrandName')?.value.trim().toLowerCase()||'';
+  const matchingContent=()=>known.filter(p=>!contentQuery()||String(p.contentName||'').toLowerCase().includes(contentQuery()));
+  const matchingVariant=()=>matchingContent().filter(p=>!brandQuery()||String(p.brandName||'').toLowerCase().includes(brandQuery()));
+  attachTextSuggestions('productContentName','productContentNameList',known.map(p=>p.contentName));
+  attachTextSuggestions('productBrandName','productBrandNameList',()=>matchingContent().map(p=>p.brandName));
+  attachTextSuggestions('productPacking','productPackingList',()=>matchingVariant().map(p=>p.packing));
+  attachTextSuggestions('productUses','productUsesList',()=>matchingVariant().map(p=>p.uses));
+  attachTextSuggestions('productCategory','productCategoryList',()=>matchingVariant().map(p=>p.category));
 }
 function openPatientForm(patient=null) {
   modal({title:patient?'Edit Patient':'Add Patient',subtitle:'Patient Masterમાં વિગતો સાચવો.',type:patient?'patient.update':'patient.create',id:patient?.id||'',note:'* જરૂરી field',body:`<div class="form-grid">${field('Patient Name','name',patient?.name||'',{required:true,placeholder:'દર્દીનું પૂરું નામ'})}${field('Patient ID','patientId',patient?.patientId||'',{placeholder:'PT-001'})}${field('Phone','phone',patient?.phone||'',{type:'tel',placeholder:'Mobile number'})}${field('Age','age',patient?.age??'',{type:'number',min:0})}<div class="field"><label>Gender</label><select name="gender"><option value="">પસંદ કરો</option>${['Female','Male','Other'].map(x=>`<option ${patient?.gender===x?'selected':''}>${x}</option>`).join('')}</select></div>${field('Notes','notes',patient?.notes||'',{full:true})}</div>`});
@@ -246,10 +260,11 @@ function attachAutocomplete(inputId,listId,getOptions,{onQuery=()=>{},onChoose=(
   if(!input||!list)return;
   let visible=[],active=-1;
   const close=()=>{list.classList.remove('open');input.setAttribute('aria-expanded','false');active=-1;};
-  const choose=index=>{
-    const option=visible[index];if(!option)return;
-    input.value=option.label;input.setCustomValidity('');close();onChoose(option);
+  const applyChoice=option=>{
+    if(!option)return false;
+    input.value=option.label;input.setCustomValidity('');close();onChoose(option);return true;
   };
+  const choose=index=>applyChoice(visible[index]);
   const render=()=>{
     const query=input.value.trim().toLocaleLowerCase();
     visible=(getOptions()||[]).filter(option=>!query||String(option.label).toLocaleLowerCase().includes(query)).slice(0,40);
@@ -271,18 +286,23 @@ function attachAutocomplete(inputId,listId,getOptions,{onQuery=()=>{},onChoose=(
     else if(event.key==='ArrowUp'&&visible.length){event.preventDefault();active=(active-1+visible.length)%visible.length;list.querySelectorAll('.autocomplete-option').forEach((item,index)=>item.classList.toggle('active',index===active));list.querySelector('.autocomplete-option.active')?.scrollIntoView({block:'nearest'});}
     else if(event.key==='Enter'&&list.classList.contains('open')&&visible.length&&(active>=0||input.value.trim())){event.preventDefault();choose(active>=0?active:0);}
   });
+  return { selectValue(value){
+    const target=String(value??'').trim().toLocaleLowerCase();
+    const option=(getOptions()||[]).find(item=>String(item.value??'').trim().toLocaleLowerCase()===target);
+    return applyChoice(option);
+  }};
 }
 function distinctValues(values){const map=new Map();for(const value of values){const text=String(value??'').trim(),key=text.toLowerCase();if(!map.has(key))map.set(key,text);}return [...map.values()].sort((a,b)=>a.localeCompare(b));}
-function bindProductCascade(products,{contentId,contentListId,brandId,brandListId,packingId,packingListId,onSelect}){
+function bindProductCascade(products,{contentId,contentListId,brandId,brandListId,packingId,packingListId,onSelect,initialProduct=null}){
   const content=document.getElementById(contentId),brand=document.getElementById(brandId),packing=document.getElementById(packingId);
-  if(!content||!brand||!packing)return;
+  if(!content||!brand||!packing)return null;
   const norm=value=>String(value??'').trim().toLowerCase();
   const contentOptions=autocompleteChoices(distinctValues(products.map(p=>p.contentName)));
   let selectedContent=null,selectedBrand=null,brandOptions=[],packingOptions=[];
   const clearProduct=()=>onSelect(null);
   const clearPacking=()=>{selectedBrand=null;packingOptions=[];packing.value='';packing.disabled=true;packing.placeholder='પહેલા Brand Name પસંદ કરો';packing.setCustomValidity('');clearProduct();};
   const resetBrand=()=>{selectedContent=null;selectedBrand=null;brandOptions=[];packingOptions=[];brand.value='';brand.disabled=true;brand.placeholder='પહેલા Content Name પસંદ કરો';packing.value='';packing.disabled=true;packing.placeholder='પહેલા Brand Name પસંદ કરો';brand.setCustomValidity('');packing.setCustomValidity('');clearProduct();};
-  attachAutocomplete(contentId,contentListId,()=>contentOptions,{
+  const contentSearch=attachAutocomplete(contentId,contentListId,()=>contentOptions,{
     onQuery:()=>{content.setCustomValidity('Database listમાંથી Content Name પસંદ કરો.');resetBrand();},
     onChoose:option=>{
       selectedContent=option.value;content.setCustomValidity('');
@@ -292,7 +312,7 @@ function bindProductCascade(products,{contentId,contentListId,brandId,brandListI
       clearPacking();
     }
   });
-  attachAutocomplete(brandId,brandListId,()=>brandOptions,{
+  const brandSearch=attachAutocomplete(brandId,brandListId,()=>brandOptions,{
     onQuery:()=>{brand.setCustomValidity('Brand listમાંથી પસંદ કરો.');clearPacking();},
     onChoose:option=>{
       selectedBrand=option.value;brand.setCustomValidity('');
@@ -301,7 +321,7 @@ function bindProductCascade(products,{contentId,contentListId,brandId,brandListI
       packing.setCustomValidity(packingOptions.length?'':'આ brand માટે packing ઉપલબ્ધ નથી.');clearProduct();
     }
   });
-  attachAutocomplete(packingId,packingListId,()=>packingOptions,{
+  const packingSearch=attachAutocomplete(packingId,packingListId,()=>packingOptions,{
     onQuery:()=>{packing.setCustomValidity('Packing listમાંથી પસંદ કરો.');clearProduct();},
     onChoose:option=>{
       const selectedPacking=option.value;
@@ -309,43 +329,75 @@ function bindProductCascade(products,{contentId,contentListId,brandId,brandListI
       packing.setCustomValidity(product?'':'Packing listમાંથી પસંદ કરો.');onSelect(product||null);
     }
   });
+  if(initialProduct){
+    contentSearch?.selectValue(initialProduct.contentName);
+    brandSearch?.selectValue(initialProduct.brandName);
+    packingSearch?.selectValue(initialProduct.packing);
+  }
+  return {content,brand,packing};
 }
-function patientChoice(p){return `${p.name}${p.patientId?` · ${p.patientId}`:p.phone?` · ${p.phone}`:` · ${String(p.id).slice(0,6)}`}`;}
-function openStockInForm() {
-  const products=state.data.products||[];
+function attachTextSuggestions(inputId,listId,values){
+  const getValues=typeof values==='function'?values:()=>values||[];
+  return attachAutocomplete(inputId,listId,()=>autocompleteChoices((getValues()||[]).filter(value=>String(value??'').trim()!=='')));
+}
+function productSuggestionField(label,name,value,options={}){
+  const listId=`${options.id}List`,required=options.required?'required':'',full=options.full?'full':'';
+  return `<div class="field ${full}"><label>${esc(label)}${options.required?' <span class="req">*</span>':''}</label><div class="autocomplete-wrap"><input name="${esc(name)}" id="${esc(options.id)}" value="${esc(value)}" autocomplete="off" ${required} placeholder="${esc(options.placeholder||'લખો અથવા suggestion પસંદ કરો')}"><div class="autocomplete-options" id="${esc(listId)}" role="listbox"></div></div></div>`;
+}
+function patientChoice(p){return String(p.name||'').trim();}
+function openStockInForm(entry=null) {
+  const products=state.data.products||[],editing=Boolean(entry);
   if(!products.length){showToast('પહેલા Product Masterમાં Content Name ઉમેરો.',true);return;}
-  modal({title:'Add Stock IN',subtitle:'Content Name શોધો, પછી Brand Name અને Packing પસંદ કરો.',type:'stockIn.create',note:'Expiry MM/YYમાં લખો; Entry Date પસંદ કરો.',body:`<div class="form-grid"><div class="field full"><label>Content Name <span class="req">*</span></label><div class="autocomplete-wrap"><input name="contentName" id="stockInContent" autocomplete="off" required placeholder="નામ લખો, જેમ કે Levo" aria-label="Content Name શોધો"><div class="autocomplete-options" id="stockInContentList" role="listbox"></div></div><span class="field-hint">લખતાં જ databaseમાં મેળ ખાતાં નામો દેખાશે; એક પસંદ કરો.</span></div><div class="field"><label>Brand Name <span class="req">*</span></label><div class="autocomplete-wrap"><input name="brandChoice" id="stockInBrand" autocomplete="off" required disabled placeholder="પહેલા Content Name પસંદ કરો"><div class="autocomplete-options" id="stockInBrandList" role="listbox"></div></div></div><div class="field"><label>Packing <span class="req">*</span></label><div class="autocomplete-wrap"><input name="packingChoice" id="stockInPacking" autocomplete="off" required disabled placeholder="પહેલા Brand Name પસંદ કરો"><div class="autocomplete-options" id="stockInPackingList" role="listbox"></div></div></div><input type="hidden" name="productId" id="stockInProductId">${field('Stock IN','qtyIn','',{type:'number',required:true,min:'0.01',step:'any',placeholder:'જથ્થો'})}${field('Entry Date','entryDate',today(),{type:'date',required:true})}${field('Expiry Date (MM/YY)','expiryMonth','',{required:true,placeholder:'MM/YY',attrs:'inputmode="text" maxlength="5" pattern="(0[1-9]|1[0-2])/[0-9]{2}"'})}</div>`});
-  bindProductCascade(products,{contentId:'stockInContent',contentListId:'stockInContentList',brandId:'stockInBrand',brandListId:'stockInBrandList',packingId:'stockInPacking',packingListId:'stockInPackingList',onSelect:product=>{document.getElementById('stockInProductId').value=product?.id||'';}});
+  const initialProduct=entry?products.find(p=>p.id===entry.productId):null;
+  const hasIssues=Number(entry?.qtyOut||0)>0;
+  modal({title:editing?'Edit Stock IN':'Add Stock IN',subtitle:'Content Name શોધો, પછી Brand Name અને Packing પસંદ કરો.',type:editing?'stockIn.update':'stockIn.create',id:entry?.id||'',submit:editing?'Save Stock IN':'Add Stock IN',note:hasIssues?'આ batchમાંથી Stock OUT થયું છે, તેથી Product બદલી શકાતી નથી.':'Expiry MM/YYમાં લખો; Entry Date પસંદ કરો.',body:`<div class="form-grid"><div class="field full"><label>Content Name <span class="req">*</span></label><div class="autocomplete-wrap"><input name="contentName" id="stockInContent" autocomplete="off" required placeholder="નામ લખો, જેમ કે Levo" aria-label="Content Name શોધો"><div class="autocomplete-options" id="stockInContentList" role="listbox"></div></div><span class="field-hint">લખતાં જ databaseમાં મેળ ખાતાં નામો દેખાશે; એક પસંદ કરો.</span></div><div class="field"><label>Brand Name <span class="req">*</span></label><div class="autocomplete-wrap"><input name="brandChoice" id="stockInBrand" autocomplete="off" required disabled placeholder="પહેલા Content Name પસંદ કરો"><div class="autocomplete-options" id="stockInBrandList" role="listbox"></div></div></div><div class="field"><label>Packing <span class="req">*</span></label><div class="autocomplete-wrap"><input name="packingChoice" id="stockInPacking" autocomplete="off" required disabled placeholder="પહેલા Brand Name પસંદ કરો"><div class="autocomplete-options" id="stockInPackingList" role="listbox"></div></div></div><input type="hidden" name="productId" id="stockInProductId">${field('Stock IN','qtyIn',entry?.qtyIn??'',{type:'number',required:true,min:'0.01',step:'any',placeholder:'જથ્થો'})}${field('Entry Date','entryDate',entry?.entryDate||today(),{type:'date',required:true})}${field('Expiry Date (MM/YY)','expiryMonth',entry?monthYearText(entry.expiryDate):'',{required:true,placeholder:'MM/YY',attrs:'inputmode="text" maxlength="5" pattern="(0[1-9]|1[0-2])/[0-9]{2}"'})}</div>`});
+  const cascade=bindProductCascade(products,{contentId:'stockInContent',contentListId:'stockInContentList',brandId:'stockInBrand',brandListId:'stockInBrandList',packingId:'stockInPacking',packingListId:'stockInPackingList',initialProduct,onSelect:product=>{document.getElementById('stockInProductId').value=product?.id||'';}});
+  if(hasIssues&&cascade){cascade.content.disabled=true;cascade.brand.disabled=true;cascade.packing.disabled=true;}
 }
-function openStockOutForm() {
-  const d=state.data,patients=d.patients||[],lots=(d.stockEntries||[]).filter(e=>Number(e.currentStock)>0&&String(e.expiryDate)>=today());
-  const stockedProducts=(d.products||[]).filter(p=>lots.some(l=>l.productId===p.id));
-  if(!patients.length||!lots.length||!stockedProducts.length){showToast(!patients.length?'Stock OUT પહેલાં Patient Masterમાં patient ઉમેરો.':'Issue માટે non-expired stock batch ઉપલબ્ધ નથી.',true);return;}
-  let availableLots=[],lotOptions=[];
-  modal({title:'Add Stock OUT',subtitle:'Content Name → Brand Name → Packing → Expiry batch પસંદ કરો.',type:'stockOut.create',note:'Non-expired batches અને તેમનો available stock જ દેખાશે.',body:`<div class="form-grid"><div class="field full"><label>Content Name <span class="req">*</span></label><div class="autocomplete-wrap"><input name="contentName" id="outContent" autocomplete="off" required placeholder="નામ લખો, જેમ કે Levo"><div class="autocomplete-options" id="outContentList" role="listbox"></div></div><span class="field-hint">લખતાં જ databaseમાં મેળ ખાતાં નામો દેખાશે; એક પસંદ કરો.</span></div><div class="field"><label>Brand Name <span class="req">*</span></label><div class="autocomplete-wrap"><input name="brandChoice" id="outBrand" autocomplete="off" required disabled placeholder="પહેલા Content Name પસંદ કરો"><div class="autocomplete-options" id="outBrandList" role="listbox"></div></div></div><div class="field"><label>Packing <span class="req">*</span></label><div class="autocomplete-wrap"><input name="packingChoice" id="outPacking" autocomplete="off" required disabled placeholder="પહેલા Brand Name પસંદ કરો"><div class="autocomplete-options" id="outPackingList" role="listbox"></div></div></div><input type="hidden" name="productId" id="outProductId"><div class="field full"><label>Expiry / Available Stock <span class="req">*</span></label><div class="autocomplete-wrap"><input name="lotSearch" id="outLotSearch" autocomplete="off" required disabled placeholder="પહેલા product પસંદ કરો"><div class="autocomplete-options" id="outLotList" role="listbox"></div></div><input type="hidden" name="lotId" id="outLotId"><span class="field-hint" id="outLotHint">Expiry month પસંદ કર્યા પછી available quantity દેખાશે.</span></div>${field('Stock OUT','qtyOut','',{type:'number',required:true,min:'0.01',step:'any',placeholder:'જથ્થો'})}<div class="field"><label>Patient Name <span class="req">*</span></label><div class="autocomplete-wrap"><input name="patientSearch" id="outPatientSearch" autocomplete="off" required placeholder="Patientનું નામ લખો"><div class="autocomplete-options" id="outPatientList" role="listbox"></div></div><input type="hidden" name="patientId" id="outPatientId"><span class="field-hint">લખતાં જ databaseની patient list દેખાશે.</span></div>${field('Issue Date','issueDate',today(),{type:'date',required:true})}</div>`});
-  bindProductCascade(stockedProducts,{contentId:'outContent',contentListId:'outContentList',brandId:'outBrand',brandListId:'outBrandList',packingId:'outPacking',packingListId:'outPackingList',onSelect:product=>{
-    document.getElementById('outProductId').value=product?.id||'';
-    availableLots=product?lots.filter(l=>l.productId===product.id).sort((a,b)=>String(a.expiryDate).localeCompare(String(b.expiryDate))):[];
-    lotOptions=availableLots.map((lot,index)=>({value:lot.id,label:`${monthYearText(lot.expiryDate)} · ${qty(lot.currentStock)} available · Received ${dateText(lot.entryDate)}${availableLots.length>1?` · Entry ${index+1}`:''}`}));
+function openStockOutForm(outRecord=null) {
+  const d=state.data,patients=d.patients||[],allLots=d.stockEntries||[],editing=Boolean(outRecord);
+  const initialIssueDate=outRecord?.date||today(),initialProduct=d.products?.find(p=>p.id===outRecord?.productId)||null;
+  const balanceFor=lot=>(Number(lot.currentStock)||0)+(editing&&lot.id===outRecord?.lotId?(Number(outRecord.qty)||0):0);
+  const eligibleForForm=allLots.filter(lot=>balanceFor(lot)>0&&String(lot.expiryDate)>=(editing?initialIssueDate:today()));
+  const stockedProducts=(d.products||[]).filter(product=>eligibleForForm.some(lot=>lot.productId===product.id));
+  if(!patients.length||!stockedProducts.length){showToast(!patients.length?'Stock OUT પહેલાં Patient Masterમાં patient ઉમેરો.':'Issue માટે eligible stock batch ઉપલબ્ધ નથી.',true);return;}
+  let selectedProduct=null,availableLots=[],lotOptions=[];
+  modal({title:editing?'Edit Stock OUT':'Add Stock OUT',subtitle:'Content Name → Brand Name → Packing → Expiry batch પસંદ કરો.',type:editing?'stockOut.update':'stockOut.create',id:outRecord?.id||'',submit:editing?'Save Stock OUT':'Add Stock OUT',note:editing?'Available balanceમાં આ entryની હાલની quantity ગણાય છે.':'Non-expired batches અને તેમનો available stock જ દેખાશે.',body:`<div class="form-grid"><div class="field full"><label>Content Name <span class="req">*</span></label><div class="autocomplete-wrap"><input name="contentName" id="outContent" autocomplete="off" required placeholder="નામ લખો, જેમ કે Levo"><div class="autocomplete-options" id="outContentList" role="listbox"></div></div><span class="field-hint">લખતાં જ databaseમાં મેળ ખાતાં નામો દેખાશે; એક પસંદ કરો.</span></div><div class="field"><label>Brand Name <span class="req">*</span></label><div class="autocomplete-wrap"><input name="brandChoice" id="outBrand" autocomplete="off" required disabled placeholder="પહેલા Content Name પસંદ કરો"><div class="autocomplete-options" id="outBrandList" role="listbox"></div></div></div><div class="field"><label>Packing <span class="req">*</span></label><div class="autocomplete-wrap"><input name="packingChoice" id="outPacking" autocomplete="off" required disabled placeholder="પહેલા Brand Name પસંદ કરો"><div class="autocomplete-options" id="outPackingList" role="listbox"></div></div></div><input type="hidden" name="productId" id="outProductId"><div class="field full"><label>Expiry / Available Stock <span class="req">*</span></label><div class="autocomplete-wrap"><input name="lotSearch" id="outLotSearch" autocomplete="off" required disabled placeholder="પહેલા product પસંદ કરો"><div class="autocomplete-options" id="outLotList" role="listbox"></div></div><input type="hidden" name="lotId" id="outLotId"><span class="field-hint" id="outLotHint">Expiry month પસંદ કર્યા પછી available quantity દેખાશે.</span></div>${field('Stock OUT','qtyOut',outRecord?.qty??'',{type:'number',required:true,min:'0.01',step:'any',placeholder:'જથ્થો'})}<div class="field"><label>Patient Name <span class="req">*</span></label><div class="autocomplete-wrap"><input name="patientSearch" id="outPatientSearch" autocomplete="off" required placeholder="Patientનું નામ લખો"><div class="autocomplete-options" id="outPatientList" role="listbox"></div></div><input type="hidden" name="patientId" id="outPatientId"><span class="field-hint">લખતાં જ દર્દીનું નામ સૂચનમાં દેખાશે.</span></div>${field('Issue Date','issueDate',initialIssueDate,{type:'date',required:true})}</div>`});
+  const populateLots=product=>{
+    selectedProduct=product||null;
+    const issueDate=document.querySelector('#entityForm [name="issueDate"]')?.value||(editing?initialIssueDate:today());
+    const earliest=editing?issueDate:today();
+    availableLots=product?allLots.filter(lot=>lot.productId===product.id&&balanceFor(lot)>0&&String(lot.expiryDate)>=earliest).sort((a,b)=>String(a.expiryDate).localeCompare(String(b.expiryDate))):[];
+    lotOptions=availableLots.map((lot,index)=>({value:lot.id,label:`${monthYearText(lot.expiryDate)} · ${qty(balanceFor(lot))} available · Received ${dateText(lot.entryDate)}${availableLots.length>1?` · Entry ${index+1}`:''}`}));
     const lotInput=document.getElementById('outLotSearch');lotInput.value='';lotInput.disabled=!availableLots.length;lotInput.placeholder=availableLots.length?'Expiry લખો અથવા available stock પસંદ કરો':'આ product માટે usable stock નથી';lotInput.setCustomValidity(availableLots.length?'':'આ product માટે usable stock નથી.');
     document.getElementById('outLotId').value='';
-    const hint=document.getElementById('outLotHint');if(hint)hint.textContent=availableLots.length?'Expiry month લખો અથવા listમાંથી પસંદ કરો.':'આ selection માટે usable stock નથી.';
-    const qtyInput=document.querySelector('#entityForm [name="qtyOut"]');if(qtyInput){qtyInput.value='';qtyInput.removeAttribute('max');}
+    const hint=document.getElementById('outLotHint');if(hint)hint.textContent=availableLots.length?'Expiry month લખો અથવા listમાંથી પસંદ કરો.':'આ selection/date માટે usable stock નથી.';
+    const qtyInput=document.querySelector('#entityForm [name="qtyOut"]');if(qtyInput){qtyInput.removeAttribute('max');if(!editing)qtyInput.value='';}
+  };
+  bindProductCascade(stockedProducts,{contentId:'outContent',contentListId:'outContentList',brandId:'outBrand',brandListId:'outBrandList',packingId:'outPacking',packingListId:'outPackingList',initialProduct,onSelect:product=>{
+    document.getElementById('outProductId').value=product?.id||'';
+    populateLots(product);
   }});
-  attachAutocomplete('outLotSearch','outLotList',()=>lotOptions,{
+  const lotSearch=attachAutocomplete('outLotSearch','outLotList',()=>lotOptions,{
     onQuery:()=>{document.getElementById('outLotId').value='';document.getElementById('outLotSearch').setCustomValidity('Expiry listમાંથી પસંદ કરો.');const input=document.querySelector('#entityForm [name="qtyOut"]');if(input)input.removeAttribute('max');},
     onChoose:option=>{
       document.getElementById('outLotId').value=option.value;
       const lot=availableLots.find(item=>item.id===option.value),hint=document.getElementById('outLotHint'),input=document.querySelector('#entityForm [name="qtyOut"]');
-      if(hint)hint.textContent=lot?`${monthYearText(lot.expiryDate)} batchમાં ${qty(lot.currentStock)} units ઉપલબ્ધ છે.`:'Expiry batch પસંદ કરો.';
-      if(input&&lot)input.max=lot.currentStock;
+      if(hint)hint.textContent=lot?`${monthYearText(lot.expiryDate)} batchમાં ${qty(balanceFor(lot))} units ઉપલબ્ધ છે.`:'Expiry batch પસંદ કરો.';
+      if(input&&lot)input.max=balanceFor(lot);
     }
   });
   const patientOptions=patients.map(p=>({value:p.id,label:patientChoice(p)}));
-  attachAutocomplete('outPatientSearch','outPatientList',()=>patientOptions,{
+  const patientSearch=attachAutocomplete('outPatientSearch','outPatientList',()=>patientOptions,{
     onQuery:()=>{document.getElementById('outPatientId').value='';document.getElementById('outPatientSearch').setCustomValidity('Databaseની patient listમાંથી નામ પસંદ કરો.');},
     onChoose:option=>{document.getElementById('outPatientId').value=option.value;document.getElementById('outPatientSearch').setCustomValidity('');}
   });
+  const issueDateInput=document.querySelector('#entityForm [name="issueDate"]');
+  issueDateInput?.addEventListener('change',()=>{if(selectedProduct)populateLots(selectedProduct);});
+  if(editing){
+    lotSearch?.selectValue(outRecord.lotId);
+    patientSearch?.selectValue(outRecord.patientId);
+  }
 }
 function openMemberForm(member=null) {
   const checked=new Set(member?.pagePermissions||[]);
@@ -362,12 +414,12 @@ async function submitForm(e) {
   if(type.startsWith('member.'))payload.pagePermissions=fd.getAll('pagePermissions');
   if(id)payload.id=id;
   try {
-    if(type==='stockIn.create'){
+    if(type==='stockIn.create'||type==='stockIn.update'){
       if(!payload.productId)throw new Error('Database listમાંથી Content Name, Brand Name અને Packing પસંદ કરો.');
       payload.expiryDate=monthYearToISO(payload.expiryMonth);
       delete payload.expiryMonth;delete payload.brandChoice;delete payload.packingChoice;delete payload.contentName;
     }
-    if(type==='stockOut.create'){
+    if(type==='stockOut.create'||type==='stockOut.update'){
       if(!payload.productId)throw new Error('Content Name, Brand Name અને Packing પસંદ કરો.');
       if(!payload.lotId)throw new Error('Expiry listમાંથી available batch પસંદ કરો.');
       if(!payload.patientId)throw new Error('Databaseની listમાંથી Patient Name પસંદ કરો.');
@@ -465,8 +517,9 @@ async function parseAndImport(file){
   const selectedCount={products:out.products.length,stockIn:out.stockEntries.length,stockOut:out.stockOuts.length,patients:out.patients.length}[section];
   if(!selectedCount)throw new Error(`${SHEET_BY_PAGE[section]} tabમાં import કરવા records મળ્યા નથી.`);
   out.stockOuts=out.stockOuts.map(o=>{const found=out.patients.find(p=>p.name.toLowerCase()===o.patientName.toLowerCase());return{...o,patientRecord:found||{name:o.patientName,patientId:'',phone:''}};});
+  out.section=section;
   const summary=`Selected tab: ${SHEET_BY_PAGE[section]} · Records: ${selectedCount}`;
-  if(!confirm(`${filename}\n\n${summary}\n\nફક્ત આ tabનો data import થશે. Existing data સાથે merge થશે; એ જ transaction ફરી import કરવાથી duplicate થઈ શકે. આગળ વધવું છે?`))return;
+  if(!confirm(`${filename}\n\n${summary}\n\nફક્ત આ tabનો data import થશે. Existing Product/Stock entries બદલાશે નહીં; એકસરખી જૂની row ફરી આવે તો skip થશે. આગળ વધવું છે?`))return;
   const result=await api('/api/import',{method:'POST',body:JSON.stringify(out)});
   await refreshCurrent();
   const c=result.counts||{},saved={products:c.products||0,stockIn:c.stockEntries||0,stockOut:c.stockOuts||0,patients:c.patients||0}[section];
@@ -485,7 +538,9 @@ async function clickAction(el, event){
   if(action==='add-patient'){openPatientForm();return;}
   if(action==='edit-patient'){openPatientForm((state.data.patients||[]).find(x=>x.id===id));return;}
   if(action==='add-stock-in'){if(state.page!=='stockIn'){await loadPage('stockIn');}openStockInForm();return;}
+  if(action==='edit-stock-in'){if(state.user?.role!=='admin'){showToast('Stock IN edit ફક્ત Admin કરી શકે.',true);return;}openStockInForm((state.data.stockEntries||[]).find(x=>x.id===id));return;}
   if(action==='add-stock-out'){if(state.page!=='stockOut'){await loadPage('stockOut');}openStockOutForm();return;}
+  if(action==='edit-stock-out'){if(state.user?.role!=='admin'){showToast('Stock OUT edit ફક્ત Admin કરી શકે.',true);return;}openStockOutForm((state.data.stockOuts||[]).find(x=>x.id===id));return;}
   if(action==='add-member'){openMemberForm();return;}
   if(action==='edit-member'){openMemberForm((state.data.users||[]).find(x=>x.id===id));return;}
   if(action==='delete-product'){confirmDelete('Delete Product?', 'જો productનો stock history હોય તો delete અટકશે.',()=>runAction('product.delete',{id}));return;}
@@ -507,6 +562,14 @@ document.addEventListener('click',async e=>{
   const el=e.target.closest('[data-action]');if(el){await clickAction(el,e);return;}
 });
 document.addEventListener('submit',submitForm);
+document.addEventListener('input',event=>{
+  if(event.target.id!=='productStockSearch')return;
+  state.query=event.target.value;
+  const cursor=event.target.selectionStart;
+  const headerSearch=document.getElementById('searchInput');if(headerSearch)headerSearch.value=state.query;
+  renderPage();
+  const next=document.getElementById('productStockSearch');if(next){next.focus();if(cursor!==null)next.setSelectionRange(cursor,cursor);}
+});
 document.addEventListener('change',e=>{
   if(e.target.id==='excelInput'){
     const file=e.target.files?.[0];e.target.value='';if(file)parseAndImport(file).catch(err=>showToast(err.message,true));
