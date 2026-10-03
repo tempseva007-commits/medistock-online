@@ -596,6 +596,10 @@ document.addEventListener('change',e=>{
   }
 });
 
+if(import.meta.env.PROD&&'serviceWorker' in navigator){
+  navigator.serviceWorker.register('/sw.js').catch(error=>console.warn('MediStock app install support could not start:',error));
+}
+
 async function init(){
   try{const data=await api('/api/auth/me');await enterApp(data.user);}
   catch(error){
