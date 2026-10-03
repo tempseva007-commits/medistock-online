@@ -107,6 +107,32 @@ export async function POST(request) {
       return json({ ok: true, id: rows[0].id, createdBy: user.id }, 201);
     }
 
+    if (type === 'stockIn.update') {
+      await requireAdmin(request);
+      const id = clean(p.id, 80);
+      const productId = clean(p.productId, 80);
+      const qtyIn = number(p.qtyIn);
+      const expiryDate = String(p.expiryDate || '');
+      const entryDate = p.entryDate && validDate(p.entryDate) ? p.entryDate : todayISO();
+      if (!id || !productId || !Number.isFinite(qtyIn) || qtyIn <= 0 || !validDate(expiryDate)) throw new HttpError(400, 'Stock IN id, Product, positive quantity અને valid expiry date જરૂરી છે.');
+      const rows = await sql`
+        UPDATE public.stock_entries AS se
+           SET product_id = ${productId}, qty_in = ${qtyIn}, expiry_date = ${expiryDate}::date,
+               entry_date = ${entryDate}::date
+         WHERE se.id = ${id}
+           AND ${qtyIn} >= (SELECT COALESCE(SUM(so.qty_out), 0) FROM public.stock_outs so WHERE so.stock_entry_id = se.id)
+           AND NOT EXISTS (SELECT 1 FROM public.stock_outs so WHERE so.stock_entry_id = se.id AND so.issue_date > ${expiryDate}::date)
+           AND (se.product_id = ${productId} OR NOT EXISTS (SELECT 1 FROM public.stock_outs so WHERE so.stock_entry_id = se.id))
+        RETURNING se.id
+      `;
+      if (!rows.length) {
+        const existing = await sql`SELECT id FROM public.stock_entries WHERE id = ${id}`;
+        if (!existing.length) throw new HttpError(404, 'Stock IN batch મળ્યો નથી.');
+        throw new HttpError(409, 'Edit અટક્યું: quantity issued stockથી ઓછી ન હોઈ શકે, expiry issue date પછીની ન હોઈ શકે, અને issued batchનું Product બદલી શકાતું નથી.');
+      }
+      return json({ ok: true });
+    }
+
     if (type === 'stockIn.delete') {
       const user = await requireAdmin(request);
       const rows = await sql`DELETE FROM public.stock_entries WHERE id = ${clean(p.id, 80)} RETURNING id`;
@@ -125,6 +151,20 @@ export async function POST(request) {
         SELECT public.issue_stock(${lotId}, ${patientId}, ${qtyOut}, ${issueDate}::date) AS id
       `;
       return json({ ok: true, id: rows[0].id, createdBy: user.id }, 201);
+    }
+
+    if (type === 'stockOut.update') {
+      await requireAdmin(request);
+      const id = clean(p.id, 80);
+      const lotId = clean(p.lotId, 80);
+      const patientId = clean(p.patientId, 80);
+      const qtyOut = number(p.qtyOut);
+      const issueDate = p.issueDate && validDate(p.issueDate) ? p.issueDate : todayISO();
+      if (!id || !lotId || !patientId || !Number.isFinite(qtyOut) || qtyOut <= 0) throw new HttpError(400, 'Stock OUT id, batch, Patient અને positive quantity જરૂરી છે.');
+      const rows = await sql`
+        SELECT public.edit_stock_out(${id}, ${lotId}, ${patientId}, ${qtyOut}, ${issueDate}::date) AS id
+      `;
+      return json({ ok: true, id: rows[0]?.id });
     }
 
     if (type === 'stockOut.delete') {
