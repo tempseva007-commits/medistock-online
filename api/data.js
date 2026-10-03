@@ -11,6 +11,64 @@ function daysUntil(date) {
   return Math.round((target - today) / 86400000);
 }
 
+function currentMonthIndex() {
+  const [year, month] = todayISO().slice(0, 7).split('-').map(Number);
+  return year * 12 + month - 1;
+}
+
+function expiryMonthIndex(date) {
+  const match = String(date || '').slice(0, 7).match(/^(\d{4})-(\d{2})$/);
+  return match ? Number(match[1]) * 12 + Number(match[2]) - 1 : null;
+}
+
+function isWithinExpiryMonths(date, months) {
+  const index = expiryMonthIndex(date);
+  const current = currentMonthIndex();
+  return index !== null && index >= current && index < current + months;
+}
+
+function usableStockByProduct(products, entries) {
+  const stock = new Map(products.map(product => [product.id, 0]));
+  const today = todayISO();
+  for (const entry of entries) {
+    if (String(entry.expiryDate) >= today && Number(entry.currentStock) > 0) {
+      stock.set(entry.productId, (stock.get(entry.productId) || 0) + Number(entry.currentStock));
+    }
+  }
+  return stock;
+}
+
+// Treat Demand as one content-level threshold, not a per-brand amount.
+// If variant rows differ, the highest entered Demand is used conservatively.
+function lowStockByContent(products, entries) {
+  const stockByProduct = usableStockByProduct(products, entries);
+  const groups = new Map();
+  for (const product of products) {
+    const key = String(product.contentName || '').trim().toLowerCase();
+    if (!key) continue;
+    let group = groups.get(key);
+    if (!group) {
+      group = { contentName: product.contentName, brandNames: new Set(), currentStock: 0, demand: 0, variantCount: 0 };
+      groups.set(key, group);
+    }
+    if (product.brandName) group.brandNames.add(product.brandName);
+    group.currentStock += stockByProduct.get(product.id) || 0;
+    group.demand = Math.max(group.demand, Number(product.demand) || 0);
+    group.variantCount++;
+  }
+  return [...groups.values()]
+    .map(group => ({ ...group, brandNames: [...group.brandNames].sort((a, b) => a.localeCompare(b)) }))
+    .filter(group => group.currentStock < group.demand)
+    .sort((a, b) => (a.currentStock / (a.demand || 1)) - (b.currentStock / (b.demand || 1)) || a.contentName.localeCompare(b.contentName));
+}
+
+function expiringEntries(entries, expiryMonths) {
+  return entries
+    .map(entry => ({ ...entry, daysLeft: daysUntil(entry.expiryDate) }))
+    .filter(entry => Number(entry.currentStock) > 0 && entry.daysLeft !== null && (entry.daysLeft < 0 || isWithinExpiryMonths(entry.expiryDate, expiryMonths)))
+    .sort((a, b) => a.daysLeft - b.daysLeft);
+}
+
 async function getProducts() {
   return sql`
     SELECT id, content_name AS "contentName", brand_name AS "brandName",
@@ -62,26 +120,16 @@ async function getStockOuts() {
   `;
 }
 
-async function getExpiryDays() {
-  const rows = await sql`SELECT expiry_alert_days AS days FROM public.app_settings WHERE id = 1`;
-  return Number(rows[0]?.days ?? 30);
+async function getExpiryMonths() {
+  // Fixed requirement: current calendar month plus the following month.
+  return 2;
 }
 
 async function getDashboard() {
-  const [products, entries, expiryDays] = await Promise.all([getProducts(), getStockEntries(), getExpiryDays()]);
-  const today = todayISO();
-  const stockByProduct = new Map(products.map(p => [p.id, 0]));
-  const usableEntries = entries.filter(e => String(e.expiryDate) >= today && Number(e.currentStock) > 0);
-  for (const e of usableEntries) stockByProduct.set(e.productId, (stockByProduct.get(e.productId) || 0) + Number(e.currentStock));
-  const lowStock = products
-    .map(p => ({ ...p, currentStock: stockByProduct.get(p.id) || 0 }))
-    .filter(p => p.currentStock <= Number(p.demand || 0))
-    .slice(0, 8);
-  const expiring = entries
-    .map(e => ({ ...e, daysLeft: daysUntil(e.expiryDate) }))
-    .filter(e => Number(e.currentStock) > 0 && e.daysLeft !== null && e.daysLeft <= expiryDays)
-    .sort((a, b) => a.daysLeft - b.daysLeft)
-    .slice(0, 8);
+  const [products, entries, expiryMonths] = await Promise.all([getProducts(), getStockEntries(), getExpiryMonths()]);
+  const stockByProduct = usableStockByProduct(products, entries);
+  const lowStock = lowStockByContent(products, entries);
+  const expiring = expiringEntries(entries, expiryMonths).slice(0, 8);
   const recentIn = await sql`
     SELECT 'in' AS kind, p.content_name AS "contentName", p.brand_name AS "brandName",
            se.qty_in AS qty, se.entry_date AS date, se.created_at AS "createdAt"
@@ -105,11 +153,11 @@ async function getDashboard() {
       productCount: products.length,
       patientCount: Number(patients[0]?.count || 0),
       units: [...stockByProduct.values()].reduce((a, b) => a + b, 0),
-      lowCount: products.filter(p => (stockByProduct.get(p.id) || 0) <= Number(p.demand || 0)).length,
-      expiringCount: entries.filter(e => Number(e.currentStock) > 0 && daysUntil(e.expiryDate) !== null && daysUntil(e.expiryDate) <= expiryDays).length,
-      expiryDays,
+      lowCount: lowStock.length,
+      expiringCount: expiringEntries(entries, expiryMonths).length,
+      expiryMonths,
     },
-    lowStock,
+    lowStock: lowStock.slice(0, 8),
     expiring,
     recent,
   };
@@ -117,10 +165,11 @@ async function getDashboard() {
 
 export async function GET(request) {
   try {
-    const page = new URL(request.url).searchParams.get('page') || '';
+    const url = new URL(request.url);
+    const page = url.searchParams.get('page') || '';
     if (page === 'export') {
       await requireAdmin(request);
-      const section = new URL(request.url).searchParams.get('section') || '';
+      const section = url.searchParams.get('section') || '';
       if (section === 'products') return json({ products: await getProducts() });
       if (section === 'stockIn') return json({ stockEntries: await getStockEntries() });
       if (section === 'stockOut') return json({ stockOuts: await getStockOuts() });
@@ -134,9 +183,8 @@ export async function GET(request) {
     if (page === 'products') {
       await requirePage(request, page);
       const [products, entries] = await Promise.all([getProducts(), getStockEntries()]);
-      const stockByProduct = new Map(products.map(p => [p.id, 0]));
-      for (const e of entries) if (String(e.expiryDate) >= todayISO()) stockByProduct.set(e.productId, (stockByProduct.get(e.productId) || 0) + Number(e.currentStock));
-      return json({ products: products.map(p => ({ ...p, currentStock: stockByProduct.get(p.id) || 0 })) });
+      const stockByProduct = usableStockByProduct(products, entries);
+      return json({ products: products.map(product => ({ ...product, currentStock: stockByProduct.get(product.id) || 0 })) });
     }
     if (page === 'patients') {
       await requirePage(request, page);
@@ -144,26 +192,19 @@ export async function GET(request) {
     }
     if (page === 'stockIn') {
       await requirePage(request, page);
-      const [products, stockEntries, expiryDays] = await Promise.all([getProducts(), getStockEntries(), getExpiryDays()]);
-      return json({ products, stockEntries, expiryDays });
+      const [products, stockEntries, expiryMonths] = await Promise.all([getProducts(), getStockEntries(), getExpiryMonths()]);
+      return json({ products, stockEntries, expiryMonths });
     }
     if (page === 'stockOut') {
       await requirePage(request, page);
       const [products, patients, stockEntries, stockOuts] = await Promise.all([getProducts(), getPatients(), getStockEntries(), getStockOuts()]);
-      const today = todayISO();
-      const stockByProduct = new Map(products.map(p => [p.id, 0]));
-      for (const e of stockEntries) if (String(e.expiryDate) >= today) stockByProduct.set(e.productId, (stockByProduct.get(e.productId) || 0) + Number(e.currentStock));
-      return json({ products: products.map(p => ({ ...p, currentStock: stockByProduct.get(p.id) || 0 })), patients, stockEntries, stockOuts });
+      const stockByProduct = usableStockByProduct(products, stockEntries);
+      return json({ products: products.map(product => ({ ...product, currentStock: stockByProduct.get(product.id) || 0 })), patients, stockEntries, stockOuts });
     }
     if (page === 'alerts') {
       await requirePage(request, page);
-      const [products, stockEntries, expiryDays] = await Promise.all([getProducts(), getStockEntries(), getExpiryDays()]);
-      const today = todayISO();
-      const stockByProduct = new Map(products.map(p => [p.id, 0]));
-      for (const e of stockEntries) if (String(e.expiryDate) >= today) stockByProduct.set(e.productId, (stockByProduct.get(e.productId) || 0) + Number(e.currentStock));
-      const lowStock = products.map(p => ({ ...p, currentStock: stockByProduct.get(p.id) || 0 })).filter(p => p.currentStock <= Number(p.demand || 0));
-      const expiring = stockEntries.map(e => ({ ...e, daysLeft: daysUntil(e.expiryDate) })).filter(e => Number(e.currentStock) > 0 && e.daysLeft !== null && e.daysLeft <= expiryDays).sort((a, b) => a.daysLeft - b.daysLeft);
-      return json({ lowStock, expiring, expiryDays });
+      const [products, stockEntries, expiryMonths] = await Promise.all([getProducts(), getStockEntries(), getExpiryMonths()]);
+      return json({ lowStock: lowStockByContent(products, stockEntries), expiring: expiringEntries(stockEntries, expiryMonths), expiryMonths });
     }
     throw new HttpError(400, 'આ page data માટે request માન્ય નથી.');
   } catch (error) {
