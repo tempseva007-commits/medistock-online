@@ -134,18 +134,6 @@ export async function POST(request) {
       return json({ ok: true, by: user.id });
     }
 
-    if (type === 'settings.expiryDays') {
-      await requireAdmin(request);
-      const days = number(p.days);
-      if (!Number.isInteger(days) || days < 0 || days > 365) throw new HttpError(400, 'Expiry window 0થી 365 દિવસ વચ્ચે હોવી જોઈએ.');
-      await sql`
-        INSERT INTO public.app_settings (id, expiry_alert_days, updated_at)
-        VALUES (1, ${days}, now())
-        ON CONFLICT (id) DO UPDATE SET expiry_alert_days = EXCLUDED.expiry_alert_days, updated_at = now()
-      `;
-      return json({ ok: true, days });
-    }
-
     throw new HttpError(400, 'Action ઓળખાઈ નથી.');
   } catch (error) {
     return fail(error);
