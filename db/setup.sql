@@ -167,3 +167,64 @@ BEGIN
   RETURN v_new_id;
 END;
 $$;
+
+-- Atomic Admin edit of an existing Stock OUT. The old row is kept, and the
+-- selected batch is locked while its available balance is checked.
+CREATE OR REPLACE FUNCTION public.edit_stock_out(
+  p_stock_out_id uuid,
+  p_stock_entry_id uuid,
+  p_patient_id uuid,
+  p_qty_out numeric,
+  p_issue_date date
+) RETURNS uuid
+LANGUAGE plpgsql
+AS $$
+DECLARE
+  v_qty_in numeric(12,2);
+  v_expiry_date date;
+  v_already_out numeric(12,2);
+  v_updated_id uuid;
+BEGIN
+  IF p_qty_out IS NULL OR p_qty_out <= 0 THEN
+    RAISE EXCEPTION 'Quantity must be greater than zero';
+  END IF;
+
+  PERFORM 1 FROM public.stock_outs WHERE id = p_stock_out_id FOR UPDATE;
+  IF NOT FOUND THEN
+    RAISE EXCEPTION 'Stock OUT record not found';
+  END IF;
+
+  SELECT qty_in, expiry_date
+    INTO v_qty_in, v_expiry_date
+    FROM public.stock_entries
+   WHERE id = p_stock_entry_id
+   FOR UPDATE;
+  IF NOT FOUND THEN
+    RAISE EXCEPTION 'Stock batch not found';
+  END IF;
+
+  IF v_expiry_date < p_issue_date THEN
+    RAISE EXCEPTION 'Cannot dispense from an expired batch';
+  END IF;
+
+  SELECT COALESCE(SUM(qty_out), 0)
+    INTO v_already_out
+    FROM public.stock_outs
+   WHERE stock_entry_id = p_stock_entry_id
+     AND id <> p_stock_out_id;
+
+  IF (v_qty_in - v_already_out) < p_qty_out THEN
+    RAISE EXCEPTION 'Not enough stock in this batch';
+  END IF;
+
+  UPDATE public.stock_outs
+     SET stock_entry_id = p_stock_entry_id,
+         patient_id = p_patient_id,
+         qty_out = p_qty_out,
+         issue_date = p_issue_date
+   WHERE id = p_stock_out_id
+   RETURNING id INTO v_updated_id;
+
+  RETURN v_updated_id;
+END;
+$$;
